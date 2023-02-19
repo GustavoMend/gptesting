@@ -28,7 +28,7 @@ def echo(update, context):
         context.bot.send_message(chat_id=update.effective_chat.id, text="Send me a YouTube video link.")
 
 # Create the bot and add the handlers
-updater = Updater(token="YOUR_TOKEN_HERE", use_context=True)
+updater = Updater(token="5542310588:AAHg4m7EzQzB7j5cSllnf7qZUpkwqpwyWl4", use_context=True)
 dispatcher = updater.dispatcher
 
 start_handler = CommandHandler('start', start)
