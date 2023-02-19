@@ -24,12 +24,14 @@ def download_audio(update, context):
         filename = f"{yt.title}.mp3"
         stream.download(filename=filename)
         # Send the audio file to the user
-        context.bot.send_audio(chat_id=update.effective_chat.id, audio=open(filename, 'rb'))
+        with open(filename, 'rb') as audio_file:
+            context.bot.send_audio(chat_id=update.effective_chat.id, audio=audio_file)
         # Delete the downloaded file
         os.remove(filename)
     except Exception as e:
         logger.error(f"Error downloading audio: {e}")
         context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, there was an error downloading the audio. Please try again.")
+
 
 def error(update, context):
     logger.warning(f"Update {update} caused error {context.error}")
