@@ -32,12 +32,11 @@ def download_audio(update, context):
         logger.error(f"Error downloading audio: {e}")
         context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, there was an error downloading the audio. Please try again.")
 
-
 def error(update, context):
     logger.warning(f"Update {update} caused error {context.error}")
 
 # Set up the Telegram bot
-token = '5542310588:AAHg4m7EzQzB7j5cSllnf7qZUpkwqpwyWl4'
+token = 'YOUR_BOT_TOKEN_HERE'
 updater = Updater(token, use_context=True)
 
 # Set up command handlers
