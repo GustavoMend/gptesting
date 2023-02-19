@@ -115,3 +115,4 @@ def main():
     dispatcher.add_handler(convert_handler)
 
     # Start the bot
+bot.polling()
