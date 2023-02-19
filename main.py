@@ -27,7 +27,7 @@ dispatcher = updater.dispatcher
 start_handler = CommandHandler('start', start)
 dispatcher.add_handler(start_handler)
 
-echo_handler = MessageHandler(Filters.text & (~Filters.command), echo)
+echo_handler = MessageHandler(filters.text & (~filters.command), echo)
 dispatcher.add_handler(echo_handler)
 
 # Start the bot
