@@ -6,7 +6,7 @@ from moviepy.editor import *
 from mutagen.easyid3 import EasyID3
 
 # Initialize the Telegram bot
-bot = telebot.TeleBot("5542310588:AAHg4m7EzQzB7j5cSllnf7qZUpkwqpwyWl4")
+bot = telebot.TeleBot("YOUR_BOT_TOKEN")
 
 # Assign the file type and downloads path
 file_type = "mp4" # Set the default file type to mp4
@@ -65,9 +65,11 @@ def download_video(message):
             audio_file_tags.save()
             audio_file_path = os.path.splitext(file_path)[0] + ".mp3"
             audio_file.write_audiofile(audio_file_path)
+            os.remove(file_path)
             file_path = audio_file_path
         except Exception:
-            pass
+            bot.reply_to(message, "Video could not be converted to an MP3 format successfully. File cannot be found or already exists.")
+            return
     
     # Send the video file to the user
     try:
@@ -81,8 +83,6 @@ def download_video(message):
         bot.reply_to(message, f"Error sending file: {str(e)}")
     finally:
         os.remove(file_path) # Delete the temporary file after sending it
-        if file_type == "mp3":
-            os.remove(audio_file_path) # Delete the temporary audio file
 
 # Start the bot
 bot.polling()
