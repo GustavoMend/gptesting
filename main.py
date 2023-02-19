@@ -8,17 +8,32 @@ from mutagen.easyid3 import EasyID3
 # Initialize the Telegram bot
 bot = telebot.TeleBot("5542310588:AAHg4m7EzQzB7j5cSllnf7qZUpkwqpwyWl4")
 
+# Initialize global variable to store user settings
+user_settings = {"format": "video"}
+
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.reply_to(message, "Welcome to the video downloader bot! Send me the YouTube video URL and the desired format (video or audio) separated by a space.")
+    bot.reply_to(message, "Welcome to the video downloader bot! Send me the YouTube video URL.")
+
+@bot.message_handler(commands=['settings'])
+def settings(message):
+    markup = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
+    markup.add('Video', 'Audio')
+    bot.send_message(message.chat.id, "Choose your preferred file format:", reply_markup=markup)
+
+@bot.message_handler(func=lambda message: message.text == 'Video' or message.text == 'Audio')
+def set_format(message):
+    user_settings["format"] = message.text.lower()
+    bot.send_message(message.chat.id, f"Your preferred file format is {user_settings['format']}.")
 
 @bot.message_handler(func=lambda message: True)
 def download_video(message):
-    # Parse the user's message for the video URL and desired format
+    # Parse the user's message for the video URL and use the user's preferred format, or default to video
     try:
-        url, file_type = message.text.split()
+        url = message.text
+        file_type = user_settings["format"]
     except ValueError:
-        bot.reply_to(message, "Please send the video URL and the desired format (mp4 or mp3) separated by a space.")
+        bot.reply_to(message, "Please send the video URL.")
         return
     
     # Try converting a url to a downloadable video
@@ -44,8 +59,8 @@ def download_video(message):
         bot.reply_to(message, "Video could not be downloaded.")
         return
 
-    # Update file metadata
-    if file_type == "audio":
+    # Update file metadata and convert to mp3 if desired
+    if file_type == "mp3":
         try:
             audio_file = AudioFileClip(file_path)
             audio_file_tags = EasyID3(file_path)
@@ -54,19 +69,19 @@ def download_video(message):
             audio_file_tags['album'] = "YouTube Audio"
             audio_file_tags['date'] = str(yt.publish_date)
             audio_file_tags.save()
+            audio_file_path = os.path.splitext(file_path)[0] + ".mp3"
+            audio_file.write_audiofile(audio_file_path)
+            file_path = audio_file_path
         except Exception:
             pass
     
-        # Send the video file to the user
+    # Send the video file to the user
     try:
         if file_type == "mp4":
             with open(file_path, "rb") as file:
                 bot.send_video(message.chat.id, file)
         elif file_type == "mp3":
-            audio_file_path = os.path.splitext(file_path)[0] + ".mp3"
-            audio = AudioFileClip(file_path)
-            audio.write_audiofile(audio_file_path)
-            with open(audio_file_path, "rb") as file:
+            with open(file_path, "rb") as file:
                 bot.send_audio(message.chat.id, file, title=yt.title, performer=yt.author)
     except Exception as e:
         bot.reply_to(message, f"Error sending file: {str(e)}")
