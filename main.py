@@ -36,7 +36,7 @@ def error(update, context):
     logger.warning(f"Update {update} caused error {context.error}")
 
 # Set up the Telegram bot
-token = 'YOUR_BOT_TOKEN_HERE'
+token = '5542310588:AAHg4m7EzQzB7j5cSllnf7qZUpkwqpwyWl4'
 updater = Updater(token, use_context=True)
 
 # Set up command handlers
