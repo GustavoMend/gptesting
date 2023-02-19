@@ -96,7 +96,7 @@ def main():
 
         # Send the converted file to the user
         context.bot.send_document(chat_id=update.effective_chat.id, document=open(file_path, 'rb'))
-
+Updater.start_polling()
 
     # Define the convert command handler
     def convert(update, context):
