@@ -6,11 +6,11 @@ from moviepy.editor import *
 from mutagen.easyid3 import EasyID3
 
 # Initialize the Telegram bot
-bot = telebot.TeleBot("5542310588:AAHg4m7EzQzB7j5cSllnf7qZUpkwqpwyWl4")
+bot = telebot.TeleBot("YOUR_BOT_TOKEN")
 
 # Assign the file type and downloads path
-file_type = "mp3" # Set the default file type to mp4
-downloads_path = os.path.join(os.getcwd(), "temp")
+file_type = "mp3"  # Set the default file type to mp3
+downloads_path = tempfile.mkdtemp()
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -24,26 +24,26 @@ def settings(message):
 
 @bot.message_handler(func=lambda message: message.text == 'Video' or message.text == 'Audio')
 def set_format(message):
-    global file_type # Set file_type as a global variable so that it can be modified
+    global file_type  # Set file_type as a global variable so that it can be modified
     file_type = message.text.lower()
     bot.send_message(message.chat.id, f"Your preferred file format is {file_type}.")
 
 @bot.message_handler(func=lambda message: True)
 def download_video(message):
-    # Parse the user's message for the video URL and use the user's preferred format, or default to mp4
+    # Parse the user's message for the video URL and use the user's preferred format, or default to mp3
     try:
         url = message.text
     except ValueError:
         bot.reply_to(message, "Please send the video URL.")
         return
-    
+
     # Try converting a url to a downloadable video
     try:
         yt = YouTube(url)
     except Exception:
         bot.reply_to(message, "Video URL is not valid.")
         return
-    
+
     # Try downloading the converted video
     try:
         video = yt.streams.filter(file_extension=file_type).order_by('resolution').desc().first()
@@ -68,9 +68,9 @@ def download_video(message):
             os.remove(file_path)
             file_path = audio_file_path
         except Exception:
-            bot.reply_to(message, "Video could not be converted to an MP3 format successfully. File cannot be found or already exists.")
+            bot.reply_to(message, "Video could not be converted to an MP3 format successfully.")
             return
-    
+
     # Send the video file to the user
     try:
         if file_type == "mp4":
@@ -82,7 +82,7 @@ def download_video(message):
     except Exception as e:
         bot.reply_to(message, f"Error sending file: {str(e)}")
     finally:
-        os.remove(file_path) # Delete the temporary file after sending it
+        os.remove(file_path)  # Delete the temporary file after sending it
 
 # Start the bot
 bot.polling()
