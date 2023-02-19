@@ -1,39 +1,42 @@
-import io
-import telegram
+import os
+from telegram.ext import Updater, CommandHandler, MessageHandler, filters
 from pytube import YouTube
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
+# This function handles the /start command
 def start(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id, text="Hello! I'm a YouTube downloader bot. Send me a YouTube video link and I'll send you a download link.")
 
-def download_video(url, file_type, downloads_path):
-    yt = YouTube(url)
-    stream = yt.streams.get_highest_resolution()
-    if file_type == "mp3":
-        stream = stream.streams.filter(only_audio=True).first()
-    return stream.download(downloads_path)
+# This function handles all other messages
+def echo(update, context):
+    url = update.message.text
 
-def send_video(update, context):
-    try:
-        video_url = update.message.text
-        file_type = "mp4"  # or "mp3"
-        downloads_path = os.path.join(os.getcwd(), "temp")
-        video_path = download_video(video_url, file_type, downloads_path)
-        with open(video_path, 'rb') as f:
-            if file_type == "mp4":
-                context.bot.send_video(chat_id=update.message.chat_id, video=f)
-            elif file_type == "mp3":
-                context.bot.send_audio(chat_id=update.message.chat_id, audio=f)
-    except Exception as e:
-        context.bot.send_message(chat_id=update.message.chat_id, text=f"Error: {e}")
+    # Check if the message contains a valid YouTube URL
+    if "youtube.com" in url:
+        try:
+            yt = YouTube(url)
+            # Assign the file type and downloads path
+            file_type = "mp4"
+            downloads_path = os.path.join(os.getcwd(), "temp")
+            # Try downloading the converted video
+            video = yt.streams.get_highest_resolution().download(output_path=downloads_path, filename="video")
+            file_path = os.path.join(downloads_path, f"{video.title}.{video.mime_type.split('/')[-1]}")
+            context.bot.send_document(chat_id=update.effective_chat.id, document=open(file_path, 'rb'))
+        except Exception as e:
+            context.bot.send_message(chat_id=update.effective_chat.id, text="Video could not be downloaded.")
+            print(e)
+    else:
+        context.bot.send_message(chat_id=update.effective_chat.id, text="Send me a YouTube video link.")
 
-updater = Updater(token="5542310588:AAHg4m7EzQzB7j5cSllnf7qZUpkwqpwyWl4", use_context=True)
+# Create the bot and add the handlers
+updater = Updater(token="YOUR_TOKEN_HERE", use_context=True)
 dispatcher = updater.dispatcher
 
 start_handler = CommandHandler('start', start)
 dispatcher.add_handler(start_handler)
 
-video_handler = MessageHandler(Filters.regex(r'https?://.*'), send_video)
-dispatcher.add_handler(video_handler)
+echo_handler = MessageHandler(filters.Filters.text & (~filters.Filters.command), echo)
 
+dispatcher.add_handler(echo_handler)
+
+# Start the bot
 updater.start_polling()
