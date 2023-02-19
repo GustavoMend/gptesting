@@ -46,7 +46,7 @@ def debug_video_progress(yt: YouTube, video, file_type: str, extra_info: str="")
 
 ## Main function
 def main():
-    updater = Updater("5542310588:AAHg4m7EzQzB7j5cSllnf7qZUpkwqpwyWl4", use_context=True)
+    updater = Updater("YOUR_TOKEN_HERE", use_context=True)
     dispatcher = updater.dispatcher
 
     # Define the start command handler
@@ -77,22 +77,7 @@ def main():
             context.bot.send_message(chat_id=update.effective_chat.id, text="Video could not be downloaded.")
             return
 
-        file_path = os.path.join(downloads_path, video.default_filename)
-
-        # Convert to mp3
-        try:
-            if file_type == "mp3":
-                file_path_mp3 = file_path.replace("mp4", "mp3")
-                if os.path.exists(file_path_mp3):
-                    os.remove(file_path_mp3)
-                
-                file_path = convert_to_mp3_with_metadata(file_path)
-        except Exception:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="Video could not be converted to an MP3 format successfully. File cannot be found or already exists.")
-            return
-        
-        # Update file metadata
-        update_metadata(file_path, yt.title, yt.author)
+        file_path = os.path.join(downloads_path,yt.title, yt.author)
 
         # Send the converted file to the user
         context.bot.send_document(chat_id=update.effective_chat.id, document=open(file_path, 'rb'))
