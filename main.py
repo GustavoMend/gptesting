@@ -27,7 +27,7 @@ def send_video(update, context):
     except Exception as e:
         context.bot.send_message(chat_id=update.message.chat_id, text=f"Error: {e}")
 
-updater = Updater(token="your_token_here", use_context=True)
+updater = Updater(token="5542310588:AAHg4m7EzQzB7j5cSllnf7qZUpkwqpwyWl4", use_context=True)
 dispatcher = updater.dispatcher
 
 start_handler = CommandHandler('start', start)
