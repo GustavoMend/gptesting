@@ -114,5 +114,8 @@ def main():
     convert_handler = MessageHandler(Filters.regex(r'^(mp3|mp4)$'), convert)
     dispatcher.add_handler(convert_handler)
 
-    # Start the bot
-bot.polling()
+    updater = Updater("5542310588:AAHg4m7EzQzB7j5cSllnf7qZUpkwqpwyWl4", use_context=True)
+
+# ... define handlers here ...
+
+updater.start_polling()
