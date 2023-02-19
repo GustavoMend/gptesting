@@ -46,7 +46,7 @@ def debug_video_progress(yt: YouTube, video, file_type: str, extra_info: str="")
 
 ## Main function
 def main():
-    updater = Updater("YOUR_API_TOKEN_HERE", use_context=True)
+    updater = Updater("5542310588:AAHg4m7EzQzB7j5cSllnf7qZUpkwqpwyWl4", use_context=True)
     dispatcher = updater.dispatcher
 
     # Define the start command handler
