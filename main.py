@@ -6,7 +6,7 @@ from moviepy.editor import *
 from mutagen.easyid3 import EasyID3
 
 # Initialize the Telegram bot
-bot = telebot.TeleBot("YOUR_BOT_TOKEN")
+bot = telebot.TeleBot("5542310588:AAHg4m7EzQzB7j5cSllnf7qZUpkwqpwyWl4")
 
 # Assign the file type and downloads path
 file_type = "mp3"  # Set the default file type to mp3
