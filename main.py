@@ -18,10 +18,10 @@ def download_video(message):
     try:
         url, file_type = message.text.split()
     except ValueError:
-        bot.reply_to(message, "Please send the video URL and the desired format (video or audio) separated by a space.")
+        bot.reply_to(message, "Please send the video URL and the desired format (mp4 or mp3) separated by a space.")
         return
     
-    # Try converting a url to a downloadable video or audio
+    # Try converting a url to a downloadable video
     try:
         yt = YouTube(url)
     except Exception:
@@ -31,22 +31,17 @@ def download_video(message):
     # Assign the file type and downloads path
     downloads_path = tempfile.gettempdir()
     file_type = file_type.lower()
-    if file_type not in ["video", "audio"]:
-        bot.reply_to(message, "Invalid file format. Please choose video or audio.")
+    if file_type not in ["mp4", "mp3"]:
+        bot.reply_to(message, "Invalid file format. Please choose mp4 or mp3.")
         return
     
-    # Try downloading the converted video or audio
+    # Try downloading the converted video
     try:
-        if file_type == "video":
-            video = yt.streams.filter(file_extension='mp4').order_by('resolution').desc().first()
-            file_path = os.path.join(downloads_path, video.default_filename)
-            video.download(downloads_path)
-        elif file_type == "audio":
-            audio = yt.streams.filter(only_audio=True).first()
-            file_path = os.path.join(downloads_path, f"{yt.title}.mp3")
-            audio.download(output_path=downloads_path, filename=yt.title)
+        video = yt.streams.filter(file_extension=file_type).order_by('resolution').desc().first()
+        file_path = os.path.join(downloads_path, video.default_filename)
+        video.download(downloads_path)
     except Exception:
-        bot.reply_to(message, "Video or audio could not be downloaded.")
+        bot.reply_to(message, "Video could not be downloaded.")
         return
 
     # Update file metadata
@@ -62,12 +57,22 @@ def download_video(message):
         except Exception:
             pass
     
-    # Send the video or audio file to the user
-    with open(file_path, "rb") as file:
-        if file_type == "video":
-            bot.send_video(message.chat.id, file)
-        elif file_type == "audio":
-            bot.send_audio(message.chat.id, file)
-
+        # Send the video file to the user
+    try:
+        if file_type == "mp4":
+            with open(file_path, "rb") as file:
+                bot.send_video(message.chat.id, file)
+        elif file_type == "mp3":
+            audio_file_path = os.path.splitext(file_path)[0] + ".mp3"
+            audio = AudioFileClip(file_path)
+            audio.write_audiofile(audio_file_path)
+            with open(audio_file_path, "rb") as file:
+                bot.send_audio(message.chat.id, file, title=yt.title, performer=yt.author)
+    except Exception as e:
+        bot.reply_to(message, f"Error sending file: {str(e)}")
+    finally:
+        os.remove(file_path) # Delete the temporary file after sending it
+        if file_type == "mp3":
+            os.remove(audio_file_path) # Delete the temporary audio file
 # Start the bot
 bot.polling()
