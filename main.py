@@ -1,35 +1,34 @@
-from telegram.ext import Updater, CommandHandler, MessageHandler, filters
+import io
+import telegram
 from pytube import YouTube
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
-# This function handles the /start command
 def start(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id, text="Hello! I'm a YouTube downloader bot. Send me a YouTube video link and I'll send you a download link.")
 
-# This function handles all other messages
-def echo(update, context):
-    url = update.message.text
+def download_video(url):
+    yt = YouTube(url)
+    stream = yt.streams.get_highest_resolution()
+    return stream
 
-    # Check if the message contains a valid YouTube URL
-    if "youtube.com" in url:
-        try:
-            yt = YouTube(url)
-            video_url = yt.streams.get_highest_resolution().url
-            context.bot.send_message(chat_id=update.effective_chat.id, text=video_url)
-        except Exception:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="Invalid YouTube URL.")
-    else:
-        context.bot.send_message(chat_id=update.effective_chat.id, text="Send me a YouTube video link.")
+def send_video(update, context):
+    try:
+        video_url = update.message.text
+        video = download_video(video_url)
+        with io.BytesIO() as video_buffer:
+            video.stream_to_buffer(video_buffer)
+            video_buffer.seek(0)
+            context.bot.send_video(chat_id=update.message.chat_id, video=video_buffer)
+    except Exception as e:
+        context.bot.send_message(chat_id=update.message.chat_id, text=f"Error: {e}")
 
-# Create the bot and add the handlers
-updater = Updater(token="5542310588:AAHg4m7EzQzB7j5cSllnf7qZUpkwqpwyWl4", use_context=True)
+updater = Updater(token="your_token_here", use_context=True)
 dispatcher = updater.dispatcher
 
 start_handler = CommandHandler('start', start)
 dispatcher.add_handler(start_handler)
 
-echo_handler = MessageHandler(filters.Filters.text & (~filters.Filters.command), echo)
+video_handler = MessageHandler(Filters.regex(r'https?://.*'), send_video)
+dispatcher.add_handler(video_handler)
 
-dispatcher.add_handler(echo_handler)
-
-# Start the bot
 updater.start_polling()
