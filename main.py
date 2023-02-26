@@ -8,21 +8,12 @@ def start(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id, text="Hello! Please send me a YouTube video URL to download the audio.")
 
 def download_and_convert(url):
-    # Extract video ID from URL
-    video_id = None
-    if "youtube.com" in url:
-        video_id = re.search(r"v=([^&]+)", url).group(1)
-    elif "youtu.be" in url:
-        video_id = url.split("/")[-1]
-    if not video_id:
-        print("The provided URL is not supported.")
-        return None
     # Create YouTube object and extract audio stream
     try:
-        yt = pytube.YouTube(f"https://www.youtube.com/watch?v={video_id}")
+        yt = pytube.YouTube(url)
     except pytube.exceptions.RegexMatchError:
-        print("The provided URL is not supported.")
-        return None
+        return "The provided URL is not supported."
+    audio_stream = yt.streams.filter(only_audio=True).first()
     # Set output file names
     output_mp4 = f"{yt.title}.mp4"
 
@@ -58,7 +49,7 @@ def update_metadata(file_path: str, title: str, artist: str, album: str="") -> N
 
 def handle_message(update, context):
     text = update.message.text
-    if "youtube.com" in text:
+    if any(domain in text for domain in ["youtube.com", "youtu.be", "youtube-nocookie.com"]):
         context.bot.send_message(chat_id=update.effective_chat.id, text="Downloading...")
         output_mp3 = download_and_convert(text)
         if output_mp3:
@@ -67,8 +58,9 @@ def handle_message(update, context):
         else:
             context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, I couldn't download that video.")
 
+
 def main():
-    updater = Updater(token="5542310588:AAHg4m7EzQzB7j5cSllnf7qZUpkwqpwyWl4", use_context=True)
+    updater = Updater(token="6054512042:AAF_4lsVxJbwFk0qacpe0NqvBRauW-zEdnU", use_context=True)
 
     start_handler = CommandHandler('start', start)
     message_handler = MessageHandler(Filters.text, handle_message)
@@ -81,3 +73,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
