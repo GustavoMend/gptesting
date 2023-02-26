@@ -49,14 +49,18 @@ def update_metadata(file_path: str, title: str, artist: str, album: str="") -> N
 
 def handle_message(update, context):
     text = update.message.text
-    if any(domain in text for domain in ["youtube.com", "youtu.be", "youtube-nocookie.com"]):
-        context.bot.send_message(chat_id=update.effective_chat.id, text="Downloading...")
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Processing...")
+
+    try:
         output_mp3 = download_and_convert(text)
         if output_mp3:
             context.bot.send_audio(chat_id=update.effective_chat.id, audio=open(output_mp3, 'rb'))
             os.remove(output_mp3)
+            context.bot.send_message(chat_id=update.effective_chat.id, text="Download complete.")
         else:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, I couldn't download that video.")
+            context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, I couldn't extract audio from this link.")
+    except Exception as e:
+        context.bot.send_message(chat_id=update.effective_chat.id, text=f"Sorry, an error occurred: {str(e)}")
 
 
 def main():
