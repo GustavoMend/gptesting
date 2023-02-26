@@ -1,106 +1,74 @@
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from moviepy.editor import AudioFileClip
+import pytube
 import os
 import mutagen
-import telegram
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-from pytube import YouTube
-from moviepy.editor import AudioFileClip
 
+def start(update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Hello! Please send me a YouTube video URL to download the audio.")
 
-## Functions
-def convert_to_mp3_with_metadata(file_path: str) -> str:
-    # Use moviepy to convert an mp4 to an mp3 with metadata support. Delete mp4 afterwards
-    audio_clip = AudioFileClip(file_path)
-    file_path = file_path.replace("mp4", "mp3")
-    audio_clip.write_audiofile(file_path)
+def download_and_convert(url):
+    # Create YouTube object and extract audio stream
+    try:
+        yt = pytube.YouTube(url)
+    except pytube.exceptions.RegexMatchError:
+        return "The provided URL is not supported."
+    audio_stream = yt.streams.filter(only_audio=True).first()
+    # Set output file names
+    output_mp4 = f"{yt.title}.mp4"
+
+    # Download audio stream to MP4 file
+    audio_stream.download(output_path=os.getcwd(), filename=output_mp4)
+
+    # Use moviepy to convert the MP4 file to an MP3 file with metadata support, then delete the MP4 file
+    audio_clip = AudioFileClip(output_mp4)
+    output_mp3 = f"{yt.title}.mp3"
+    audio_clip.write_audiofile(output_mp3)
     audio_clip.close()
-    os.remove(file_path.replace("mp3", "mp4"))
-    return file_path
+    os.remove(output_mp4)
+
+    # Get video details from YouTube
+    title = yt.title
+    artist = yt.author
+    album = ""
+
+    # Update metadata of MP3 file
+    update_metadata(output_mp3, title, artist, album)
+
+    return output_mp3
 
 def update_metadata(file_path: str, title: str, artist: str, album: str="") -> None:
     # Update the file metadata according to YouTube video details
     with open(file_path, 'r+b') as file:
         media_file = mutagen.File(file, easy=True)
         media_file["title"] = title
-        if album: media_file["album"] = album
+        if album:
+            media_file["album"] = album
         media_file["artist"] = artist
         media_file.save(file)
 
-def download_video(yt: YouTube, file_type: str, downloads_path: str, debug: bool=False):
-    # Download a video and debug progress
-    if file_type == "mp4":
-        video = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
-    else:
-        video = yt.streams.filter(only_audio=True).get_audio_only()
+def handle_message(update, context):
+    text = update.message.text
+    if "youtube.com" in text:
+        context.bot.send_message(chat_id=update.effective_chat.id, text="Downloading...")
+        output_mp3 = download_and_convert(text)
+        if output_mp3:
+            context.bot.send_audio(chat_id=update.effective_chat.id, audio=open(output_mp3, 'rb'))
+            os.remove(output_mp3)
+        else:
+            context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, I couldn't download that video.")
 
-    if debug:
-        debug_video_progress(yt, video, file_type)
-
-    video.download(downloads_path)
-    return video
-
-def debug_video_progress(yt: YouTube, video, file_type: str, extra_info: str=""):
-    highest_res = f", Highest Resolution: {video.resolution}" if file_type == "mp4" else ""
-    print(f"Fetching {extra_info}\"{video.title}\"")
-    print(f"[File size: {round(video.filesize * 0.000001, 2)} MB{highest_res}, Author: {yt.author}]\n")
-
-
-## Main function
 def main():
-    updater = Updater("YOUR_TOKEN_HERE", use_context=True)
-    dispatcher = updater.dispatcher
+    updater = Updater(token="5542310588:AAHg4m7EzQzB7j5cSllnf7qZUpkwqpwyWl4", use_context=True)
 
-    # Define the start command handler
-    def start(update, context):
-        context.bot.send_message(chat_id=update.effective_chat.id, text="Welcome to the YouTube downloader bot! Please send me the URL of the YouTube video you want to download.")
-
-    # Define the download command handler
-    def download(update, context):
-        url = update.message.text
-        convert = context.user_data.get('convert')
-        file_type = "mp4" if convert == "mp4" else "mp3"
-        downloads_path = os.path.join(os.getcwd(), "temp")
-
-        # Try converting a url to a downloadable video
-        try:
-            yt = YouTube(url)
-        except Exception:
-            if "playlist?" in url:
-                context.bot.send_message(chat_id=update.effective_chat.id, text="Playlists can only be converted on the playlist page.")
-            else:
-                context.bot.send_message(chat_id=update.effective_chat.id, text="Video URL is not valid.")
-            return
-
-        # Try downloading the converted video
-        try:
-            video = download_video(yt, file_type, downloads_path, True)
-        except Exception:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="Video could not be downloaded.")
-            return
-
-        file_path = os.path.join(downloads_path,yt.title, yt.author)
-
-        # Send the converted file to the user
-        context.bot.send_document(chat_id=update.effective_chat.id, document=open(file_path, 'rb'))
-Updater.start_polling()
-
-    # Define the convert command handler
-    def convert(update, context):
-        convert = update.message.text.lower()
-        context.user_data['convert'] = convert
-        context.bot.send_message(chat_id=update.effective_chat.id, text=f"File type set to {convert.upper()}.")
-
-    # Register the handlers
     start_handler = CommandHandler('start', start)
-    dispatcher.add_handler(start_handler)
+    message_handler = MessageHandler(Filters.text, handle_message)
 
-    download_handler = MessageHandler(Filters.regex(r'^https?://.*'), download)
-    dispatcher.add_handler(download_handler)
+    updater.dispatcher.add_handler(start_handler)
+    updater.dispatcher.add_handler(message_handler)
 
-    convert_handler = MessageHandler(Filters.regex(r'^(mp3|mp4)$'), convert)
-    dispatcher.add_handler(convert_handler)
+    updater.start_polling()
+    updater.idle()
 
-    updater = Updater("5542310588:AAHg4m7EzQzB7j5cSllnf7qZUpkwqpwyWl4", use_context=True)
-
-# ... define handlers here ...
-
-Updater.start_polling()
+if __name__ == '__main__':
+    main()
