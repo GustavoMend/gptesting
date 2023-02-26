@@ -8,12 +8,21 @@ def start(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id, text="Hello! Please send me a YouTube video URL to download the audio.")
 
 def download_and_convert(url):
+    # Extract video ID from URL
+    video_id = None
+    if "youtube.com" in url:
+        video_id = re.search(r"v=([^&]+)", url).group(1)
+    elif "youtu.be" in url:
+        video_id = url.split("/")[-1]
+    if not video_id:
+        print("The provided URL is not supported.")
+        return None
     # Create YouTube object and extract audio stream
     try:
-        yt = pytube.YouTube(url)
+        yt = pytube.YouTube(f"https://www.youtube.com/watch?v={video_id}")
     except pytube.exceptions.RegexMatchError:
-        return "The provided URL is not supported."
-    audio_stream = yt.streams.filter(only_audio=True).first()
+        print("The provided URL is not supported.")
+        return None
     # Set output file names
     output_mp4 = f"{yt.title}.mp4"
 
