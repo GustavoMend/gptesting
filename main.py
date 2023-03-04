@@ -13,7 +13,6 @@ def start_handler(client, message):
 @app.on_message(~filters.command & filters.text)
 def echo(client, message):
     message.reply_text(message.text)
-
 app.run()
 def youtube_handler(client, message):
     url = message.text.strip()
