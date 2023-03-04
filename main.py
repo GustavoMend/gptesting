@@ -1,19 +1,38 @@
-from telegram.ext import Updater, CommandHandler, MessageHandler, filters
+from pyrogram import Client, filters
 from moviepy.editor import AudioFileClip
 import pytube
 import os
 import mutagen
 
-def start(update, context):
-    context.bot.send_message(chat_id=update.effective_chat.id, text="Hello! Please send me a YouTube video URL to download the audio.")
+app = Client("my_bot", bot_token="6054512042:AAE-WQ5IdL18KhVZkSLO1e_zECKG3XKztck")
+
+@app.on_message(filters.command('start'))
+def start_handler(client, message):
+    message.reply_text("Hello! Send me a YouTube video URL and I'll convert it to MP3 for you.")
+
+@app.on_message(filters.text & ~filters.command)
+def youtube_handler(client, message):
+    url = message.text.strip()
+    if not url.startswith('https://www.youtube.com/watch?v='):
+        message.reply_text("Invalid URL. Please send a valid YouTube video URL.")
+        return
+
+    try:
+        download_and_convert(url)
+    except Exception as e:
+        message.reply_text(f"Error: {str(e)}")
+        return
+
+    # Send the MP3 file
+    title = pytube.YouTube(url).title
+    mp3_file = f"{title}.mp3"
+    message.reply_audio(audio=mp3_file)
 
 def download_and_convert(url):
     # Create YouTube object and extract audio stream
-    try:
-        yt = pytube.YouTube(url)
-    except pytube.exceptions.RegexMatchError:
-        return "The provided URL is not supported."
+    yt = pytube.YouTube(url)
     audio_stream = yt.streams.filter(only_audio=True).first()
+
     # Set output file names
     output_mp4 = f"{yt.title}.mp4"
 
@@ -35,7 +54,7 @@ def download_and_convert(url):
     # Update metadata of MP3 file
     update_metadata(output_mp3, title, artist, album)
 
-    return output_mp3
+    print(f"Download complete. Audio saved as {output_mp3}.")
 
 def update_metadata(file_path: str, title: str, artist: str, album: str="") -> None:
     # Update the file metadata according to YouTube video details
@@ -47,30 +66,4 @@ def update_metadata(file_path: str, title: str, artist: str, album: str="") -> N
         media_file["artist"] = artist
         media_file.save(file)
 
-def handle_message(update, context):
-    text = update.message.text
-    if "youtube.com" in text:
-        context.bot.send_message(chat_id=update.effective_chat.id, text="Downloading...")
-        output_mp3 = download_and_convert(text)
-        if output_mp3:
-            context.bot.send_audio(chat_id=update.effective_chat.id, audio=open(output_mp3, 'rb'))
-            os.remove(output_mp3)
-        else:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, I couldn't download that video.")
-
-
-def main():
-    updater = Updater(token="5542310588:AAEIZ8lDrbRyQGtjOG33Tf8Ly_lpiLBwYsk", use_context=True)
-
-    start_handler = CommandHandler('start', start)
-    message_handler = MessageHandler(Filters.text, handle_message)
-
-    updater.dispatcher.add_handler(start_handler)
-    updater.dispatcher.add_handler(message_handler)
-
-    updater.start_polling()
-    updater.idle()
-
-if __name__ == '__main__':
-    main()
-
+app.run()
