@@ -10,7 +10,11 @@ app = Client("my_bot", bot_token="6054512042:AAE-WQ5IdL18KhVZkSLO1e_zECKG3XKztck
 def start_handler(client, message):
     message.reply_text("Hello! Send me a YouTube video URL and I'll convert it to MP3 for you.")
 
-@app.on_message(filters.text & ~filters.command)
+@app.on_message(~filters.command & filters.text)
+def echo(client, message):
+    message.reply_text(message.text)
+
+app.run()
 def youtube_handler(client, message):
     url = message.text.strip()
     if not url.startswith('https://www.youtube.com/watch?v='):
