@@ -18,36 +18,43 @@ def youtube_handler(client, message):
         return
 
     try:
-        # Create YouTube object and extract audio stream
-        yt = pytube.YouTube(url)
-        audio_stream = yt.streams.filter(only_audio=True).first()
-
-        # Set output file names
-        output_mp4 = f"{yt.title}.mp4"
-
-        # Download audio stream to MP4 file
-        audio_stream.download(output_path=os.getcwd(), filename=output_mp4)
-
-        # Use moviepy to convert the MP4 file to an MP3 file with metadata support, then delete the MP4 file
-        audio_clip = AudioFileClip(output_mp4)
-        output_mp3 = f"{yt.title}.mp3"
-        audio_clip.write_audiofile(output_mp3)
-        audio_clip.close()
-        os.remove(output_mp4)
-
-        # Get video details from YouTube
-        title = yt.title
-        artist = yt.author
-        album = ""
-
-        # Update metadata of MP3 file
-        update_metadata(output_mp3, title, artist, album)
-
-        message.reply_audio(output_mp3, performer=artist, title=title)
-
+        download_and_convert(url)
     except Exception as e:
         message.reply_text(f"Error: {str(e)}")
         return
+
+    # Send the MP3 file
+    title = pytube.YouTube(url).title
+    mp3_file = f"{title}.mp3"
+    message.reply_audio(audio=mp3_file)
+
+def download_and_convert(url):
+    # Create YouTube object and extract audio stream
+    yt = pytube.YouTube(url)
+    audio_stream = yt.streams.filter(only_audio=True).first()
+
+    # Set output file names
+    output_mp4 = f"{yt.title}.mp4"
+
+    # Download audio stream to MP4 file
+    audio_stream.download(output_path=os.getcwd(), filename=output_mp4)
+
+    # Use moviepy to convert the MP4 file to an MP3 file with metadata support, then delete the MP4 file
+    audio_clip = AudioFileClip(output_mp4)
+    output_mp3 = f"{yt.title}.mp3"
+    audio_clip.write_audiofile(output_mp3)
+    audio_clip.close()
+    os.remove(output_mp4)
+
+    # Get video details from YouTube
+    title = yt.title
+    artist = yt.author
+    album = ""
+
+    # Update metadata of MP3 file
+    update_metadata(output_mp3, title, artist, album)
+
+    print(f"Download complete. Audio saved as {output_mp3}.")
 
 def update_metadata(file_path: str, title: str, artist: str, album: str="") -> None:
     # Update the file metadata according to YouTube video details
