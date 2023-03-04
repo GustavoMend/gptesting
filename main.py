@@ -46,10 +46,9 @@ def update_metadata(file_path: str, title: str, artist: str, album: str="") -> N
             media_file["album"] = album
         media_file["artist"] = artist
         media_file.save(file)
-
 def handle_message(update, context):
     text = update.message.text
-    if "youtube.com" in text:
+    if any(domain in text for domain in ["youtube.com", "youtu.be", "youtube-nocookie.com"]):
         context.bot.send_message(chat_id=update.effective_chat.id, text="Downloading...")
         output_mp3 = download_and_convert(text)
         if output_mp3:
@@ -57,6 +56,7 @@ def handle_message(update, context):
             os.remove(output_mp3)
         else:
             context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, I couldn't download that video.")
+
 
 def main():
     updater = Updater(token="5542310588:AAHg4m7EzQzB7j5cSllnf7qZUpkwqpwyWl4", use_context=True)
