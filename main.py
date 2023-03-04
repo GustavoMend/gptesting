@@ -59,7 +59,7 @@ def handle_message(update, context):
 
 
 def main():
-    updater = Updater(token="5542310588:AAHg4m7EzQzB7j5cSllnf7qZUpkwqpwyWl4", use_context=True)
+    updater = Updater(token="5542310588:AAEIZ8lDrbRyQGtjOG33Tf8Ly_lpiLBwYsk", use_context=True)
 
     start_handler = CommandHandler('start', start)
     message_handler = MessageHandler(Filters.text, handle_message)
