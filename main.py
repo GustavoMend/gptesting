@@ -6,7 +6,7 @@ from moviepy.editor import AudioFileClip
 
 bot = Client("my_bot", bot_token="6054512042:AAE-WQ5IdL18KhVZkSLO1e_zECKG3XKztck", api_id=11169140, api_hash="4b185d543b0d1a84bed3a462ade1498f")
 
-@app.on_message(filters.command('start'))
+@bot.on_message(filters.command('start'))
 def start_handler(client, message):
     message.reply_text("Hello! Send me a YouTube video URL and I'll convert it to MP3 for you.")
 
