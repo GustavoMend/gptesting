@@ -49,22 +49,17 @@ def update_metadata(file_path: str, title: str, artist: str, album: str="") -> N
 
 def handle_message(update, context):
     text = update.message.text
-    context.bot.send_message(chat_id=update.effective_chat.id, text="Processing...")
-
-    try:
+    if "youtube.com" in text:
+        context.bot.send_message(chat_id=update.effective_chat.id, text="Downloading...")
         output_mp3 = download_and_convert(text)
         if output_mp3:
             context.bot.send_audio(chat_id=update.effective_chat.id, audio=open(output_mp3, 'rb'))
             os.remove(output_mp3)
-            context.bot.send_message(chat_id=update.effective_chat.id, text="Download complete.")
         else:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, I couldn't extract audio from this link.")
-    except Exception as e:
-        context.bot.send_message(chat_id=update.effective_chat.id, text=f"Sorry, an error occurred: {str(e)}")
-
+            context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, I couldn't download that video.")
 
 def main():
-    updater = Updater(token="6054512042:AAF_4lsVxJbwFk0qacpe0NqvBRauW-zEdnU", use_context=True)
+    updater = Updater(token="5542310588:AAHg4m7EzQzB7j5cSllnf7qZUpkwqpwyWl4", use_context=True)
 
     start_handler = CommandHandler('start', start)
     message_handler = MessageHandler(Filters.text, handle_message)
@@ -77,4 +72,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
