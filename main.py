@@ -40,10 +40,11 @@ def download_and_convert(url):
     audio_stream.download(output_path=os.getcwd(), filename=output_mp4)
 
     # Use moviepy to convert the MP4 file to an MP3 file with metadata support, then delete the MP4 file
-    audio_clip = AudioFileClip(output_mp4)
+    video_clip = VideoFileClip(output_mp4)
+    audio_clip = video_clip.audio
     output_mp3 = f"{yt.title}.mp3"
-    audio_clip.write_audiofile(output_mp3)
-    audio_clip.close()
+    audio_clip.write_audiofile(output_mp3, method='chunk')
+    video_clip.close()
     os.remove(output_mp4)
 
     # Get video details from YouTube
