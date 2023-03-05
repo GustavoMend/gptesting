@@ -4,46 +4,48 @@ import os
 import mutagen
 from moviepy.editor import AudioFileClip
 
-bot = Client("my_bot", bot_token="6054512042:AAE-WQ5IdL18KhVZkSLO1e_zECKG3XKztck", api_id=11169140, api_hash="4b185d543b0d1a84bed3a462ade1498f")
+app = Client("my_bot", bot_token="6054512042:AAE-WQ5IdL18KhVZkSLO1e_zECKG3XKztck", api_id=11169140, api_hash="4b185d543b0d1a84bed3a462ade1498f")
 
-@bot.on_message(filters.command('start'))
+@app.on_message(filters.command('start'))
 def start_handler(client, message):
     message.reply_text("Hello! Send me a YouTube video URL and I'll convert it to MP3 for you.")
 
-# filter function to check if the message contains a valid YouTube URL
-@bot.on_message(filters.private & filters.regex(r"(http|https)://(www\.)?youtube\.com/watch\?v=\w+"))
-async def download_and_send_audio(client, message):
-    # extract the YouTube URL from the message
-    url = message.text.strip()
+# Register a command handler for the /download command
+@app.on_message(filters.command("download"))
+async def download_video(client, message):
+    # Get the URL of the video to download from the message text
+    url = message.text.split(" ")[1]
 
-    # download and convert the video to audio
-    try:
-        yt = pytube.YouTube(url)
-        audio_stream = yt.streams.filter(only_audio=True).first()
-        output_mp4 = f"{yt.title}.mp4"
-        audio_stream.download(output_path=os.getcwd(), filename=output_mp4)
-        audio_clip = AudioFileClip(output_mp4)
-        output_mp3 = f"{yt.title}.mp3"
+    # Download the video using yt-dlp
+    with tempfile.TemporaryDirectory() as tempdir:
+        output_file = os.path.join(tempdir, "audio.mp4")
+        subprocess.run(["yt-dlp", "-f", "bestaudio", "--merge-output-format", "mp4", "-o", output_file, url], check=True)
+
+        # Convert the MP4 file to an MP3 file using moviepy
+        audio_clip = AudioFileClip(output_file)
+        output_mp3 = os.path.join(tempdir, "audio.mp3")
         audio_clip.write_audiofile(output_mp3)
         audio_clip.close()
-        os.remove(output_mp4)
-        title = yt.title
-        artist = yt.author
+
+        # Get the video details from yt-dlp
+        result = subprocess.run(["yt-dlp", "-e", url], stdout=subprocess.PIPE)
+        title = result.stdout.strip().decode("utf-8")
+        artist = ""
         album = ""
+
+        # Update metadata of MP3 file
         update_metadata(output_mp3, title, artist, album)
-    except Exception as e:
-        await message.reply_text(f"An error occurred while downloading the video: {str(e)}")
-        return
 
-    # send the audio file to the user
-    try:
-        await message.reply_audio(audio=output_mp3, title=title, performer=artist, caption=url)
+        # Send the MP3 file to the user through Telegram
+        with open(output_mp3, "rb") as f:
+            await client.send_audio(chat_id=message.chat.id, audio=f, title=title)
+
+        # Delete the temporary files
+        os.remove(output_file)
         os.remove(output_mp3)
-    except Exception as e:
-        await message.reply_text(f"An error occurred while sending the audio file: {str(e)}")
 
-# function to update the metadata of an audio file
-def update_metadata(file_path: str, title: str, artist: str, album: str="") -> None:
+# Update the file metadata according to video details
+def update_metadata(file_path, title, artist, album=""):
     with open(file_path, 'r+b') as file:
         media_file = mutagen.File(file, easy=True)
         media_file["title"] = title
@@ -52,5 +54,5 @@ def update_metadata(file_path: str, title: str, artist: str, album: str="") -> N
         media_file["artist"] = artist
         media_file.save(file)
 
-# start the bot
-bot.run()
+# Start the client and wait for commands
+app.run()
